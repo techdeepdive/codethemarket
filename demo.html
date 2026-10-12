@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeTheMarket — Architecture & Technical Blueprint | Reev</title>
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="CodeTheMarket — Algo Trading Platform Architecture Showcase">
+  <meta property="og:description" content="Complete architectural blueprint, HLD, LLD, and interactive demo for the CodeTheMarket algorithmic trading platform by Reev.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- Mermaid.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+  <!-- Prism.js CDN for Syntax Highlighting -->
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
+
+  <style>
+    :root {
+      --bg-main: #0a1628;
+      --bg-card: #132238;
+      --bg-card-hover: #1a2c48;
+      --bg-card-alt: #0d1b30;
+      --border-color: #1e3a5f;
+      --border-glow: rgba(59, 130, 246, 0.4);
+      --accent-blue: #3b82f6;
+      --accent-light: #60a5fa;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --code-bg: #070e1b;
+      --sidebar-width: 280px;
+      --header-height: 70px;
+    }
+
+    [data-theme="light"] {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f1f5f9;
+      --bg-card-alt: #f1f5f9;
+      --border-color: #cbd5e1;
+      --border-glow: rgba(59, 130, 246, 0.2);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-dim: #94a3b8;
+      --code-bg: #1e293b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Top Bar */
+    header.top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-height);
+      background: rgba(10, 22, 40, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      z-index: 1000;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.025em;
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .search-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-box input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 14px 6px 34px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      width: 220px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-box input:focus {
+      width: 280px;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 12px var(--border-glow);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      color: var(--text-dim);
+      font-size: 0.875rem;
+    }
+
+    .btn-icon {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-card-hover);
+      color: var(--accent-light);
+      border-color: var(--accent-blue);
+    }
+
+    /* Layout */
+    .app-layout {
+      display: flex;
+      margin-top: var(--header-height);
+      min-height: calc(100vh - var(--header-height));
+    }
+
+    /* Sidebar Navigation */
+    nav.sidebar {
+      width: var(--sidebar-width);
+      position: fixed;
+      top: var(--header-height);
+      bottom: 0;
+      left: 0;
+      background: rgba(10, 22, 40, 0.95);
+      border-right: 1px solid var(--border-color);
+      overflow-y: auto;
+      padding: 1.5rem 1rem;
+      z-index: 900;
+    }
+
+    .sidebar-section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      padding: 0 0.75rem 0.5rem;
+      font-weight: 700;
+    }
+
+    .nav-list {
+      list-style: none;
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-item a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .nav-item a:hover {
+      color: #ffffff;
+      background: var(--bg-card-hover);
+    }
+
+    .nav-item a.active {
+      color: #ffffff;
+      background: rgba(59, 130, 246, 0.2);
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      font-size: 0.7rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--text-dim);
+    }
+
+    /* Main Content Area */
+    main.content {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 2.5rem 3.5rem;
+      max-width: 1400px;
+    }
+
+    /* Hero Section */
+    .hero-banner {
+      background: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 60%),
+                  linear-gradient(180deg, var(--bg-card) 0%, var(--bg-card-alt) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 3rem;
+      margin-bottom: 3rem;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: var(--accent-light);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero-title {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 780px;
+      margin-bottom: 2rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .stat-card {
+      background: rgba(10, 22, 40, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-blue);
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    /* Section Styles */
+    section.doc-section {
+      margin-bottom: 3.5rem;
+      scroll-margin-top: calc(var(--header-height) + 1.5rem);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .section-title .section-num {
+      color: var(--accent-light);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+    }
+
+    .toggle-section-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .toggle-section-btn:hover {
+      background: var(--bg-card);
+      color: #ffffff;
+      border-color: var(--accent-blue);
+    }
+
+    .section-body {
+      transition: all 0.3s ease;
+    }
+
+    .section-body.collapsed {
+      display: none;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--border-glow);
+      box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Grid Formats */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+
+    /* Diagram Wrappers */
+    .diagram-container {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    .diagram-title {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    /* Flow Step Animation */
+    .interactive-stepper {
+      display: flex;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+
+    .stepper-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .stepper-btn.active {
+      background: var(--accent-blue);
+      color: #ffffff;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 15px var(--border-glow);
+    }
+
+    .stepper-content-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    /* Code Blocks */
+    .code-container {
+      position: relative;
+      margin: 1rem 0;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #09121f;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: color 0.2s;
+    }
+
+    .copy-btn:hover {
+      color: #ffffff;
+    }
+
+    pre[class*="language-"] {
+      margin: 0 !important;
+      padding: 1rem !important;
+      background: var(--code-bg) !important;
+      font-size: 0.85rem !important;
+      line-height: 1.5 !important;
+      border-radius: 0 !important;
+    }
+
+    /* Interactive Tables */
+    .table-container {
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+      text-align: left;
+    }
+
+    table.data-table th {
+      background: var(--bg-card-alt);
+      color: var(--text-muted);
+      padding: 12px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    table.data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    table.data-table tr:hover td {
+      background: rgba(59, 130, 246, 0.04);
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .badge-rose { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    /* Footer */
+    footer.doc-footer {
+      border-top: 1px solid var(--border-color);
+      padding: 3rem 0;
+      margin-top: 5rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.875rem;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin: 1.25rem 0;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent-light);
+    }
+
+    .disclaimer-box {
+      max-width: 700px;
+      margin: 1.5rem auto 0;
+      padding: 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    /* Print Styles */
+    @media print {
+      header.top-bar, nav.sidebar, .btn-icon, .toggle-section-btn, .search-box {
+        display: none !important;
+      }
+      main.content {
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      .card, .hero-banner, .diagram-container {
+        break-inside: avoid;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+      }
+      body {
+        background: white !important;
+        color: black !important;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      nav.sidebar {
+        display: none;
+      }
+      main.content {
+        margin-left: 0;
+        padding: 2rem 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-bar">
+    <a href="#hero" class="brand-logo">
+      <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #3b82f6, #06b6d4); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 14px;">CTM</div>
+      <span>CodeTheMarket</span>
+      <span class="brand-badge">Architecture Blueprint</span>
+    </a>
+
+    <div class="header-actions">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search architecture, APIs..." oninput="handleSearch(this.value)">
+      </div>
+
+      <button class="btn-icon" title="Toggle Light/Dark Theme" onclick="toggleTheme()">🌓</button>
+      <button class="btn-icon" title="Print-Friendly Mode" onclick="window.print()">🖨️</button>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <!-- Sticky Sidebar Navigation -->
+    <nav class="sidebar">
+      <div class="sidebar-section-title">Navigation Roadmap</div>
+      <ul class="nav-list">
+        <li class="nav-item"><a href="#hero" class="active"><span>⚡</span> Overview & Hero</a></li>
+        <li class="nav-item"><a href="#hld"><span>🏛️</span> High-Level Design (HLD)</a></li>
+        <li class="nav-item"><a href="#lld"><span>⚙️</span> Low-Level Design (LLD)</a></li>
+        <li class="nav-item"><a href="#apis"><span>🔌</span> External API Connectivity</a></li>
+        <li class="nav-item"><a href="#database"><span>💾</span> Database Schemas & Storage</a></li>
+        <li class="nav-item"><a href="#logic-flow"><span>🔄</span> Core Application Logic Flows</a></li>
+        <li class="nav-item"><a href="#frontend"><span>🖥️</span> React 19 Frontend System</a></li>
+        <li class="nav-item"><a href="#deployment"><span>🚀</span> AWS Production Infrastructure</a></li>
+        <li class="nav-item"><a href="#features"><span>📊</span> Comprehensive Feature Matrix</a></li>
+        <li class="nav-item"><a href="#strategies"><span>📈</span> Algorithmic Strategy Catalog</a></li>
+      </ul>
+
+      <div class="sidebar-section-title" style="margin-top: 1.5rem;">Author Telemetry</div>
+      <div style="padding: 0 0.75rem; font-size: 0.8rem; color: var(--text-dim);">
+        <p style="margin-bottom: 4px;"><strong>Author:</strong> Reev</p>
+        <p style="margin-bottom: 4px;"><strong>Engine:</strong> Python 3.10+ / React 19</p>
+        <p style="margin-bottom: 4px;"><strong>Version:</strong> 2.0 (Master Blueprint)</p>
+        <p><strong>License:</strong> CodeTheMarket Proprietary</p>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content">
+
+      <!-- SECTION 1: HERO / OVERVIEW -->
+      <section id="hero" class="doc-section">
+        <div class="hero-banner">
+          <div class="hero-eyebrow">
+            <span>🚀 Institutional Algo Trading Platform</span>
+            <span>•</span>
+            <span>Authored by Reev</span>
+          </div>
+
+          <h1 class="hero-title">CodeTheMarket — Multi-Asset Execution Engine</h1>
+          <p class="hero-subtitle">
+            An institutional-grade, multi-threaded algorithmic trading laboratory bridging Indian F&O (NSE, BSE, MCX) and 24/7 Crypto Futures (Delta Exchange India) with automated margin-relief spread execution, AI market sentiment, and two-way Telegram controls.
+          </p>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number" data-target="500">500+</div>
+              <div class="stat-label">Instruments Monitored</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" data-target="36">36</div>
+              <div class="stat-label">REST API Endpoints</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" data-target="7">7</div>
+              <div class="stat-label">Core Quant Strategies</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" data-target="2">2</div>
+              <div class="stat-label">Embedded SQLite DBs</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" data-target="0">₹0</div>
+              <div class="stat-label">AWS Free-Tier Infra</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: HIGH-LEVEL DESIGN (HLD) -->
+      <section id="hld" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">02</span>
+            <span>High-Level Design (HLD) Architecture</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('hld-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="hld-body" class="section-body">
+          <div class="card">
+            <h3 class="card-title">System Topography & Component Interconnect</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+              The platform implements a decoupled, event-driven monolith. The Flask server operates concurrent background daemons for tick scanning, Telegram polling, and automated bracket risk management, communicating with external brokers via authenticated REST and WebSocket adapters.
+            </p>
+
+            <div class="diagram-container">
+              <div class="diagram-title">Complete End-to-End System Topography</div>
+              <pre class="mermaid">
+graph TB
+    subgraph ClientLayer ["Client & Interface Layer"]
+        UI["React 19 SPA (Vite + TailwindCSS)"]
+        TG["Telegram Mobile App (Inline Callbacks)"]
+    end
+
+    subgraph Host ["AWS EC2 Ubuntu Host (t3.micro / Port 5000)"]
+        subgraph FlaskApp ["Flask Application Core (app.py)"]
+            REST["REST API Controllers (36 Endpoints)"]
+            AUTH["Broker Signature & TOTP Engine"]
+        end
+
+        subgraph Daemons ["Concurrent Background Daemons"]
+            ScanIndian["Indian Markets Scanner (scanner_backend.py)"]
+            ScanCrypto["Delta 24/7 Scanner (crypto_scanner.py)"]
+            TGListener["Telegram Bot Listener (telegram_listener.py)"]
+        end
+
+        subgraph Storage ["Zero-Latency Persistence"]
+            DB1[("algo_lab.db - Indian Spreads & State")]
+            DB2[("crypto_lab.db - Crypto Trades & State")]
+            ScripMaster[("api-scrip-master.csv - Dhan Instruments")]
+        end
+    end
+
+    subgraph ExternalAPIs ["External Broker & AI Services"]
+        Dhan["Dhan HQ REST & Tradehull Engine"]
+        Delta["Delta Exchange India REST API"]
+        Gemini["Google Gemini AI (gemini-3.8-flash)"]
+        Telegram["Telegram Bot API"]
+    end
+
+    UI -->|5s Poll & REST Calls| REST
+    TG <-->|Inline Keyboards & Alerts| TGListener
+    TGListener -->|Execute / Square-off| ScanIndian
+    REST --> ScanIndian
+    REST --> ScanCrypto
+    ScanIndian -->|Tick Feeds & Multi-Leg Orders| Dhan
+    ScanCrypto -->|OHLCV & Bracket Orders| Delta
+    ScanIndian -->|Persist Spreads| DB1
+    ScanCrypto -->|Persist Trades| DB2
+    REST --> DB1
+    REST --> DB2
+    ScanIndian -->|Resolve Strikes| ScripMaster
+    ScanIndian -->|Alerts| Telegram
+    ScanCrypto -->|Crypto Alerts| Telegram
+    REST -->|News Sentiment| Gemini
+              </pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: LOW-LEVEL DESIGN (LLD) -->
+      <section id="lld" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">03</span>
+            <span>Low-Level Design (LLD) Module Architecture</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('lld-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="lld-body" class="section-body">
+          <div class="grid-2">
+            <!-- Flask Core Module -->
+            <div class="card">
+              <h3 class="card-title">
+                <span class="badge badge-blue">Flask Core</span>
+                <span>app.py Controller Structure</span>
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                Coordinates 36 REST endpoints, provides static asset delivery for Vite builds, handles client-side routing fallback, and provides multi-broker orchestration.
+              </p>
+              <div class="code-container">
+                <div class="code-header"><span>Key Module Interfaces</span><span>Python</span></div>
+                <pre><code class="language-python"># app.py Architecture Highlights
+@app.route('/api/scanner/start', methods=['POST'])
+@app.route('/api/scanner/paper_trades', methods=['GET'])
+@app.route('/api/scanner/execute_trade', methods=['POST'])
+@app.route('/api/crypto/execute_trade', methods=['POST'])
+@app.route('/api/backtest/run', methods=['POST'])
+@app.route('/api/hedging/generate', methods=['POST'])
+@app.route('/api/news/market', methods=['GET'])</code></pre>
+              </div>
+            </div>
+
+            <!-- Indian Markets Scanner -->
+            <div class="card">
+              <h3 class="card-title">
+                <span class="badge badge-green">Scan Engine</span>
+                <span>scanner_backend.py Architecture</span>
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                Continuous background worker monitoring NSE 50, Nifty, BankNifty, Sensex, and MCX Commodities. Implements automated margin-relief spread execution.
+              </p>
+              <div class="code-container">
+                <div class="code-header"><span>Core Engine Methods</span><span>Python</span></div>
+                <pre><code class="language-python"># scanner_backend.py Methods
+def run_scanner():             # Main continuous daemon loop
+def evaluate_indicators():     # Calculates EMA 5/15 and WPR 70
+def get_spread_legs():         # Resolves strikes from master CSV
+def place_live_spread_order(): # BUY Hedge Leg 1st, SELL Short 2nd
+def monitor_bracket_exits():   # Real-time SL (2x) & Target (0.2x) checks</code></pre>
+              </div>
+            </div>
+
+            <!-- Delta Crypto Scanner -->
+            <div class="card">
+              <h3 class="card-title">
+                <span class="badge badge-amber">Crypto Engine</span>
+                <span>crypto_scanner.py & delta_request()</span>
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                24/7 scanning across top 28 perpetual futures contracts. Computes HMAC SHA-256 signatures, manages 10x isolated leverage, and enforces 0.05% taker fees.
+              </p>
+              <div class="code-container">
+                <div class="code-header"><span>HMAC Signing Logic</span><span>Python</span></div>
+                <pre><code class="language-python">def delta_request(method, path, api_key, api_secret, payload=""):
+    timestamp = str(int(time.time()))
+    signature_data = method + timestamp + path + payload
+    signature = hmac.new(api_secret.encode(), signature_data.encode(), hashlib.sha256).hexdigest()
+    headers = {'api-key': api_key, 'timestamp': timestamp, 'signature': signature}
+    return requests.request(method, "https://api.india.delta.exchange" + path, headers=headers, data=payload)</code></pre>
+              </div>
+            </div>
+
+            <!-- Telegram Listener -->
+            <div class="card">
+              <h3 class="card-title">
+                <span class="badge badge-purple">Two-Way Mobile</span>
+                <span>telegram_listener.py Bot Engine</span>
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                Polls updates via Telegram Long Polling. Processes inline keyboard callback buttons to trigger live spread entries and emergency square-offs.
+              </p>
+              <div class="code-container">
+                <div class="code-header"><span>Callback Handlers</span><span>Python</span></div>
+                <pre><code class="language-python"># Callback Pattern
+if callback_data.startswith("EXECUTE_"):
+    trade_id = int(callback_data.split("_")[1])
+    place_live_trade_from_paper(trade_id)
+elif callback_data.startswith("IGNORE_"):
+    mark_trade_ignored(trade_id)
+elif callback_data.startswith("EXIT_"):
+    square_off_live_spread(trade_id)</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 4: API CONNECTIVITY -->
+      <section id="apis" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">04</span>
+            <span>External API Integrations</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('apis-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="apis-body" class="section-body">
+          <div class="grid-2">
+            <!-- Dhan API Card -->
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 class="card-title" style="margin: 0;">Dhan HQ OpenAPI v2</h3>
+                <span class="badge badge-blue">REST & Market Feed</span>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                Direct integration with Dhan broker infrastructure for Indian equity and derivatives. Provides sub-second execution for multi-leg option spreads.
+              </p>
+              <ul style="color: var(--text-muted); font-size: 0.85rem; margin-left: 1.25rem; margin-bottom: 1rem;">
+                <li><strong>Authentication:</strong> Client ID + 24hr Access Token with automated TOTP login renewal.</li>
+                <li><strong>Exchange Segments:</strong> NSE_EQ, NSE_FNO, BSE_FNO (SENSEX), MCX_COMM.</li>
+                <li><strong>Margin Optimization:</strong> Enforces sequential leg routing (BUY hedge first, SELL short second) for 70%+ margin relief.</li>
+              </ul>
+            </div>
+
+            <!-- Delta API Card -->
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 class="card-title" style="margin: 0;">Delta Exchange India</h3>
+                <span class="badge badge-amber">Crypto Perpetual Futures</span>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                FIU-compliant cryptocurrency perpetual contracts settled in INR and USDT with up to 10x leverage.
+              </p>
+              <ul style="color: var(--text-muted); font-size: 0.85rem; margin-left: 1.25rem; margin-bottom: 1rem;">
+                <li><strong>Endpoint:</strong> <code>https://api.india.delta.exchange</code></li>
+                <li><strong>Order Types:</strong> Market orders with native Stop-Loss & Take-Profit brackets.</li>
+                <li><strong>Fee Structure:</strong> 0.05% Taker Fee on notional position + 18% GST modeled in real-time.</li>
+              </ul>
+            </div>
+
+            <!-- Telegram Bot Card -->
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 class="card-title" style="margin: 0;">Telegram Bot API</h3>
+                <span class="badge badge-purple">Two-Way Remote Terminal</span>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                Delivers signal alerts with rich formatting and inline callback buttons directly to the trader's mobile device.
+              </p>
+              <ul style="color: var(--text-muted); font-size: 0.85rem; margin-left: 1.25rem; margin-bottom: 1rem;">
+                <li><strong>Protocol:</strong> Long Polling with offset tracking (zero webhook ingress required).</li>
+                <li><strong>Action Buttons:</strong> [ 🚀 Execute Live ], [ 🚫 Ignore ], [ ❌ Square Off ].</li>
+                <li><strong>Security:</strong> Restricts order placement to authorized <code>TELEGRAM_CHAT_ID</code>.</li>
+              </ul>
+            </div>
+
+            <!-- Google Gemini Card -->
+            <div class="card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 class="card-title" style="margin: 0;">Google Gemini Generative AI</h3>
+                <span class="badge badge-green">AI Market Intelligence</span>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                Synthesizes macroeconomic news feeds and evaluates batch scanner results using the latest Google Gen AI SDK.
+              </p>
+              <ul style="color: var(--text-muted); font-size: 0.85rem; margin-left: 1.25rem; margin-bottom: 1rem;">
+                <li><strong>Models:</strong> <code>gemini-3.8-flash</code> (primary) / <code>gemini-1.5-flash</code> (fallback).</li>
+                <li><strong>Capabilities:</strong> Batch ticker sentiment analysis, corporate catalyst extraction.</li>
+                <li><strong>Ingress:</strong> RSS news feeds (Moneycontrol, Economic Times, Reuters).</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 5: DATABASE DESIGN -->
+      <section id="database" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">05</span>
+            <span>Database Schemas & Storage Design</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('db-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="db-body" class="section-body">
+          <div class="card">
+            <h3 class="card-title">Dual SQLite3 Embedded Persistence Architecture</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+              The platform utilizes two isolated SQLite relational databases running in WAL (Write-Ahead Logging) mode. This guarantees sub-millisecond query resolution and zero lock contention between background scanner daemons and web API requests.
+            </p>
+
+            <div class="diagram-container">
+              <div class="diagram-title">Entity Relationship & State Flow</div>
+              <pre class="mermaid">
+erDiagram
+    algo_lab_db ||--o{ paper_trades : stores
+    algo_lab_db ||--o{ scan_state : caches
+    crypto_lab_db ||--o{ crypto_trades : stores
+    crypto_lab_db ||--o{ crypto_scan_state : caches
+
+    paper_trades {
+        int id PK
+        string symbol
+        string trade_type "BUY / SELL"
+        string spread_type "BULL_PUT_SPREAD / BEAR_CALL_SPREAD"
+        string leg1_symbol "Short Leg"
+        string leg2_symbol "Hedge Leg"
+        int lot_size
+        float net_premium_entry
+        float stop_loss
+        float target
+        string status "OPEN / CLOSED_TARGET / CLOSED_SL"
+        float pnl
+        int is_live "0 = Paper, 1 = Real Order"
+        string live_leg1_order_id
+        string live_leg2_order_id
+    }
+
+    scan_state {
+        string symbol PK
+        float ltp
+        float wpr
+        float ema_fast
+        float ema_mid
+        string signal "BUY / SELL / WAIT"
+        string last_updated
+    }
+
+    crypto_trades {
+        int id PK
+        string symbol
+        string trade_type "LONG / SHORT"
+        float entry_price
+        float stop_loss
+        float target
+        string status
+        float pnl
+    }
+
+    crypto_scan_state {
+        string symbol PK
+        float ltp
+        float wpr
+        float ema_fast
+        float ema_mid
+        float ema_slow
+        string signal
+        string last_sweep
+    }
+              </pre>
+            </div>
+
+            <!-- Interactive Table Browser -->
+            <h4 style="color: #ffffff; margin: 1.5rem 0 0.75rem;">Sample Live Record Browser (algo_lab.db: paper_trades)</h4>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Symbol</th>
+                    <th>Strategy</th>
+                    <th>Leg 1 (Short)</th>
+                    <th>Leg 2 (Hedge)</th>
+                    <th>Net Credit</th>
+                    <th>Target / SL</th>
+                    <th>Status</th>
+                    <th>P&L (INR)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>#14</code></td>
+                    <td><strong>NIFTY50</strong></td>
+                    <td><span class="badge badge-green">Bull Put Spread</span></td>
+                    <td>24800 PE @ 95.50</td>
+                    <td>24600 PE @ 35.20</td>
+                    <td><strong>60.30 pts</strong></td>
+                    <td>12.00 / 120.60</td>
+                    <td><span class="badge badge-blue">OPEN</span></td>
+                    <td style="color: #34d399; font-weight: 700;">+₹1,250.00</td>
+                  </tr>
+                  <tr>
+                    <td><code>#13</code></td>
+                    <td><strong>RELIANCE</strong></td>
+                    <td><span class="badge badge-green">Bull Put Spread</span></td>
+                    <td>1300 PE @ 14.20</td>
+                    <td>1280 PE @ 6.10</td>
+                    <td><strong>8.10 pts</strong></td>
+                    <td>1.60 / 16.20</td>
+                    <td><span class="badge badge-green">CLOSED_TARGET</span></td>
+                    <td style="color: #34d399; font-weight: 700;">+₹3,250.00</td>
+                  </tr>
+                  <tr>
+                    <td><code>#12</code></td>
+                    <td><strong>SENSEX</strong></td>
+                    <td><span class="badge badge-rose">Bear Call Spread</span></td>
+                    <td>82000 CE @ 140.00</td>
+                    <td>82500 CE @ 55.00</td>
+                    <td><strong>85.00 pts</strong></td>
+                    <td>17.00 / 170.00</td>
+                    <td><span class="badge badge-rose">CLOSED_SL</span></td>
+                    <td style="color: #fb7185; font-weight: 700;">-₹2,125.00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 6: APPLICATION LOGIC FLOW -->
+      <section id="logic-flow" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">06</span>
+            <span>Application Logic & Execution Flows</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('flows-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="flows-body" class="section-body">
+          <div class="card">
+            <h3 class="card-title">Interactive Execution Stepper</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">
+              Click through the lifecycle stages below to visualize the real-time order generation and safety exit logic.
+            </p>
+
+            <div class="interactive-stepper">
+              <button class="stepper-btn active" onclick="setStep(1)">1. Market Data Tick</button>
+              <button class="stepper-btn" onclick="setStep(2)">2. Signal Generation</button>
+              <button class="stepper-btn" onclick="setStep(3)">3. Strike Resolution</button>
+              <button class="stepper-btn" onclick="setStep(4)">4. Sequential Execution</button>
+              <button class="stepper-btn" onclick="setStep(5)">5. Bracket Exit Management</button>
+            </div>
+
+            <div id="step-content-box" class="stepper-content-box">
+              <h4 id="step-title" style="color: #ffffff; margin-bottom: 0.5rem;">Stage 1: Market Data Ingestion</h4>
+              <p id="step-desc" style="color: var(--text-muted); font-size: 0.9rem;">
+                The background scanning daemon fetches real-time 15m OHLCV candle arrays for each watchlist symbol via Dhan OpenAPI / Tradehull. Historical bars are formatted into Pandas DataFrames.
+              </p>
+            </div>
+
+            <div class="diagram-container" style="margin-top: 1.5rem;">
+              <div class="diagram-title">Sequential Margin-Relief Order Placement Flow</div>
+              <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant Scan as Scanner Daemon
+    participant Dhan as Dhan HQ RMS
+    participant DB as algo_lab.db
+    participant TG as Telegram Bot
+
+    Scan->>Scan: 1. Detect Fast EMA > Mid EMA and WPR >= -80
+    Scan->>Scan: 2. Filter Monthly Expiry & Resolve OTM Strikes
+    Scan->>Dhan: 3. POST /orders: BUY Hedge Leg (Leg 2)
+    Dhan-->>Scan: 4. Order Confirmed (Hedge Established)
+    Note over Scan: 1000ms Risk Buffer
+    Scan->>Dhan: 5. POST /orders: SELL Short Leg (Leg 1)
+    Dhan-->>Scan: 6. Order Confirmed (Credit Earned)
+    Scan->>DB: 7. Store Spread Record (Status='OPEN', is_live=1)
+    Scan->>TG: 8. Dispatch Executed Trade Notification
+              </pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 7: FRONTEND ARCHITECTURE -->
+      <section id="frontend" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">07</span>
+            <span>React 19 Frontend System</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('fe-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="fe-body" class="section-body">
+          <div class="grid-3">
+            <div class="card">
+              <h3 class="card-title">Technology Stack</h3>
+              <ul style="color: var(--text-muted); font-size: 0.85rem; margin-left: 1.25rem;">
+                <li><strong>Framework:</strong> React 19 SPA</li>
+                <li><strong>Bundler:</strong> Vite 5.x</li>
+                <li><strong>Styling:</strong> Tailwind CSS 3.4</li>
+                <li><strong>Icons:</strong> Lucide React</li>
+                <li><strong>Charts:</strong> Canvas / Lightweight Charts</li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3 class="card-title">Polling Engine</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">
+                Avoids WebSocket reconnect instability by using a resilient 5-second asynchronous polling loop against lightweight SQLite query endpoints.
+              </p>
+            </div>
+
+            <div class="card">
+              <h3 class="card-title">Build & Serving</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">
+                <code>npm run build</code> outputs to <code>frontend/dist</code>. The Flask server serves static assets directly with an HTML5 pushState fallback router.
+              </p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">9 Operational Dashboard Tabs</h3>
+            <div class="grid-3" style="margin-top: 1rem;">
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">1. HomeTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">Account capital, Dhan fund balances, real-time telemetry metrics.</p>
+              </div>
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">2. ScannerTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">Live Indian stock/index scanner, paper trades ledger, trade execution modal.</p>
+              </div>
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">3. ScreenerTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">On-demand multi-criteria technical screening without daemon overhead.</p>
+              </div>
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">4. HistoricalTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">Dhan historical candlestick downloads with custom date/timeframe CSV export.</p>
+              </div>
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">5. BacktestTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">Single-instrument backtester with equity curve graphs and Sharpe ratio.</p>
+              </div>
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">6. HedgingTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">Multi-leg options strategy builder (Straddle, Strangle, Condor, Butterfly).</p>
+              </div>
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">7. CryptoScannerTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">28-coin perpetual futures scanner with live Delta P&L and 10x leverage.</p>
+              </div>
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">8. CryptoBacktestTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">Perpetual futures backtester modeling funding rates, leverage, and taker fees.</p>
+              </div>
+              <div style="background: var(--bg-card-alt); padding: 1rem; border-radius: 8px;">
+                <strong style="color: #ffffff;">9. NewsTab</strong>
+                <p style="color: var(--text-muted); font-size: 0.8rem;">Google Gemini AI macroeconomic news briefs and catalyst evaluation.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 8: DEPLOYMENT ARCHITECTURE -->
+      <section id="deployment" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">08</span>
+            <span>AWS Production Infrastructure</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('deploy-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="deploy-body" class="section-body">
+          <div class="card">
+            <h3 class="card-title">Zero-Cost Free-Tier AWS Cloud Blueprint</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+              The platform is architected to run permanently within the AWS EC2 Free Tier (750 hours/month of <code>t3.micro</code> on Ubuntu 24.04 LTS), with automated atomic database backups to Amazon S3.
+            </p>
+
+            <div class="diagram-container">
+              <div class="diagram-title">AWS Infrastructure Architecture</div>
+              <pre class="mermaid">
+graph LR
+    subgraph Internet ["Public Internet"]
+        Trader["Trader Browser / Phone"]
+        Brokers["Dhan & Delta APIs"]
+    end
+
+    subgraph AWS ["Amazon Web Services (ap-south-1 Mumbai)"]
+        EIP["Elastic IP (Static IP Whitelisting)"]
+        
+        subgraph VPC ["Default VPC / Security Group (Ports 80, 443, 22)"]
+            subgraph EC2 ["EC2 t3.micro (Ubuntu 24.04 LTS)"]
+                Nginx["Nginx Reverse Proxy"]
+                Gunicorn["Gunicorn WSGI (3 Workers)"]
+                Systemd["systemd (algoscan.service)"]
+                SQLiteFiles[("algo_lab.db & crypto_lab.db")]
+            end
+        end
+
+        subgraph StorageBackup ["Disaster Recovery"]
+            S3[("S3 Bucket: algo-trading-db-backups-99286")]
+            Cron["Nightly Cron: backup_dbs.sh"]
+        end
+    end
+
+    Trader -->|HTTPS| EIP
+    EIP --> Nginx
+    Nginx --> Gunicorn
+    Gunicorn --> SQLiteFiles
+    Systemd -->|Auto-Restart on Crash| Gunicorn
+    Cron -->|sqlite3 .backup| S3
+    Gunicorn -->|Authenticated Requests| Brokers
+              </pre>
+            </div>
+
+            <div class="code-container">
+              <div class="code-header"><span>systemd Supervisor Configuration (/etc/systemd/system/algoscan.service)</span><span>Bash</span></div>
+              <pre><code class="language-bash">[Unit]
+Description=CodeTheMarket Algo Trading Engine
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/algo-trading
+EnvironmentFile=/home/ubuntu/algo-trading/.env
+ExecStart=/home/ubuntu/algo-trading/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:5000 app:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 9: FEATURE MATRIX -->
+      <section id="features" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">09</span>
+            <span>Comprehensive Feature Matrix</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('feat-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="feat-body" class="section-body">
+          <div class="card">
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Feature Area</th>
+                    <th>Broker / Engine</th>
+                    <th>Strategy Models</th>
+                    <th>Execution Type</th>
+                    <th>Persistence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Indian Stock Scanner</strong></td>
+                    <td>Dhan HQ / Tradehull</td>
+                    <td>EMA(5/15) + WPR(70)</td>
+                    <td>Paper + Live Credit Spreads</td>
+                    <td><code>algo_lab.db</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Index Spreads</strong></td>
+                    <td>NIFTY50, BANKNIFTY, SENSEX</td>
+                    <td>Bull Put & Bear Call Spreads</td>
+                    <td>Sequential Margin Relief</td>
+                    <td><code>algo_lab.db</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>MCX Commodities</strong></td>
+                    <td>SILVERM, GOLDM, CRUDEOILM</td>
+                    <td>Trend Following Momentum</td>
+                    <td>Commodity Options Spreads</td>
+                    <td><code>algo_lab.db</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Crypto Futures Scanner</strong></td>
+                    <td>Delta Exchange India</td>
+                    <td>Triple EMA + WPR</td>
+                    <td>10x Isolated Perpetual Orders</td>
+                    <td><code>crypto_lab.db</code></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Mobile Bot Terminal</strong></td>
+                    <td>Telegram Bot API</td>
+                    <td>Two-way Execution Callbacks</td>
+                    <td>Push Alerts + Inline Buttons</td>
+                    <td>Webhook-Free Polling</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Single Backtester</strong></td>
+                    <td>Historical Engine</td>
+                    <td>7 Algorithmic Models</td>
+                    <td>Realistic Slippage + Trailing SL</td>
+                    <td>In-Memory DataFrames</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Hedging Backtester</strong></td>
+                    <td>F&O Payoff Simulator</td>
+                    <td>Straddle, Strangle, Condor, Butterfly</td>
+                    <td>Synthetic Payoff Paywall</td>
+                    <td>CSV Output Exports</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Market News AI</strong></td>
+                    <td>Google Gemini 3.8 Flash</td>
+                    <td>LLM Sentiment Summaries</td>
+                    <td>RSS Feed Ingestion</td>
+                    <td>Stateless REST Cache</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 10: TRADING STRATEGIES REFERENCE -->
+      <section id="strategies" class="doc-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-num">10</span>
+            <span>Algorithmic Strategies Reference</span>
+          </div>
+          <button class="toggle-section-btn" onclick="toggleSection('strat-body')">Toggle Collapse</button>
+        </div>
+
+        <div id="strat-body" class="section-body">
+          <div class="grid-2">
+            <!-- EMA + WPR -->
+            <div class="card">
+              <h3 class="card-title">
+                <span class="badge badge-green">Production Core</span>
+                <span>EMA(5/15) + Williams %R(70)</span>
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                The primary momentum strategy powering live scanner sweeps across Indian equities and crypto futures.
+              </p>
+              <div style="background: var(--code-bg); padding: 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem;">
+                <p><strong>BUY Entry:</strong> EMA(5) &gt; EMA(15) AND Williams %R &ge; -80 (Bullish Momentum)</p>
+                <p><strong>SELL Entry:</strong> EMA(5) &lt; EMA(15) AND Williams %R &le; -20 (Bearish Momentum)</p>
+                <p><strong>Target:</strong> 80% decay in net option credit (or +4% crypto price)</p>
+                <p><strong>Stop Loss:</strong> 100% expansion of credit received (or -3% crypto price)</p>
+              </div>
+            </div>
+
+            <!-- Bull Put & Bear Call Spreads -->
+            <div class="card">
+              <h3 class="card-title">
+                <span class="badge badge-blue">Options Structure</span>
+                <span>Defined-Risk Credit Spreads</span>
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                Eliminates naked tail risk by combining a short option strike with an out-of-the-money hedge.
+              </p>
+              <div style="background: var(--code-bg); padding: 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem;">
+                <p><strong>Bull Put Spread:</strong> Sell OTM Put (Leg 1) + Buy Further OTM Put (Leg 2)</p>
+                <p><strong>Bear Call Spread:</strong> Sell OTM Call (Leg 1) + Buy Further OTM Call (Leg 2)</p>
+                <p><strong>Max Profit:</strong> Net Credit Received upfront</p>
+                <p><strong>Max Risk:</strong> Strike Width - Net Credit Received</p>
+              </div>
+            </div>
+
+            <!-- RSI Mean Reversion -->
+            <div class="card">
+              <h3 class="card-title">
+                <span class="badge badge-amber">Mean Reversion</span>
+                <span>RSI_MR Strategy</span>
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                Captures explosive mean-reverting snapbacks in range-bound or consolidating market regimes.
+              </p>
+              <div style="background: var(--code-bg); padding: 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem;">
+                <p><strong>BUY Entry:</strong> 14-period RSI drops below 30 and hooks upward</p>
+                <p><strong>SELL Entry:</strong> 14-period RSI surges above 70 and rolls over</p>
+                <p><strong>Exit:</strong> RSI crosses the neutral 50-median line</p>
+              </div>
+            </div>
+
+            <!-- Bollinger Band Breakout -->
+            <div class="card">
+              <h3 class="card-title">
+                <span class="badge badge-purple">Volatility Expansion</span>
+                <span>BB_BREAKOUT Model</span>
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+                Capitalizes on volatility expansions following quiet periods of low-volatility price squeezes.
+              </p>
+              <div style="background: var(--code-bg); padding: 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1rem;">
+                <p><strong>BUY Entry:</strong> Close breaks above 20-period Upper Bollinger Band (2.0 Std Dev)</p>
+                <p><strong>SELL Entry:</strong> Close pierces below 20-period Lower Bollinger Band</p>
+                <p><strong>Exit:</strong> Trailing stop or reversion to the 20 SMA midline</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="doc-footer">
+        <p style="font-weight: 700; color: #ffffff; font-size: 1rem;">CodeTheMarket — Master Architecture Showcase</p>
+        <p style="color: var(--text-muted); margin-top: 4px;">Engineered by <strong>Reev</strong> | Multi-Asset Algorithmic Trading Systems</p>
+
+        <div class="footer-links">
+          <a href="#">GitHub Repository</a>
+          <span>•</span>
+          <a href="#">YouTube Masterclasses</a>
+          <span>•</span>
+          <a href="#">Course & E-Book Curriculum</a>
+          <span>•</span>
+          <a href="#">Community Discord</a>
+        </div>
+
+        <div class="disclaimer-box">
+          <strong>Regulatory & Risk Disclaimer:</strong> This software architecture and documentation is created strictly for educational and technical research purposes as part of the "CodeTheMarket" series by Reev. It does not constitute financial, investment, or trading advice. The author is not a SEBI-registered research analyst or investment advisor. Algorithmic trading involves substantial risk of capital loss.
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    // Initialize Mermaid diagrams
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#0d1b30',
+        primaryColor: '#3b82f6',
+        primaryTextColor: '#f1f5f9',
+        primaryBorderColor: '#1e3a5f',
+        lineColor: '#60a5fa',
+        secondaryColor: '#132238',
+        tertiaryColor: '#0a1628'
+      }
+    });
+
+    // Theme Toggle
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const target = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', target);
+      localStorage.setItem('ctm_theme', target);
+    }
+
+    // Collapsible Sections
+    function toggleSection(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.toggle('collapsed');
+      }
+    }
+
+    // Interactive Stepper Logic
+    const stepsData = {
+      1: {
+        title: "Stage 1: Market Data Tick Ingestion",
+        desc: "The background scanner daemon polls 15m OHLCV candle arrays for each watchlist symbol via Dhan OpenAPI / Tradehull. Historical bars are formatted into Pandas DataFrames."
+      },
+      2: {
+        title: "Stage 2: Indicator Calculation & Signal Filtering",
+        desc: "Calculates Exponential Moving Averages (5-period and 15-period) and Williams %R over 70 lookback periods. A BUY is confirmed when Fast EMA > Mid EMA and WPR >= -80."
+      },
+      3: {
+        title: "Stage 3: Dynamic Option Strike Selection",
+        desc: "Filters active Monthly Expiry ('M' flag) in api-scrip-master.csv. For Bull Put Spreads, it selects Leg 1 (Short Put ~2% OTM) and Leg 2 (Long Hedge Put ~4% OTM)."
+      },
+      4: {
+        title: "Stage 4: Sequential Margin-Relief Order Execution",
+        desc: "Crucial Risk Logic: The BUY hedge order is submitted first. Once Dhan RMS confirms hedge margin relief, the SELL short order is executed with a 1000ms delay."
+      },
+      5: {
+        title: "Stage 5: Autonomous Bracket Risk & Exit Management",
+        desc: "The tick daemon continuously monitors net spread credit. If net premium decays by 80%, Target is booked. If net premium doubles (2.0x), Stop-Loss is executed."
+      }
+    };
+
+    function setStep(stepNum) {
+      const btns = document.querySelectorAll('.stepper-btn');
+      btns.forEach((btn, idx) => {
+        if (idx + 1 === stepNum) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      const titleEl = document.getElementById('step-title');
+      const descEl = document.getElementById('step-desc');
+      if (titleEl && descEl && stepsData[stepNum]) {
+        titleEl.textContent = stepsData[stepNum].title;
+        descEl.textContent = stepsData[stepNum].desc;
+      }
+    }
+
+    // Search Filtering
+    function handleSearch(query) {
+      const q = query.toLowerCase().trim();
+      const sections = document.querySelectorAll('section.doc-section');
+      sections.forEach(sec => {
+        if (!q) {
+          sec.style.display = 'block';
+          return;
+        }
+        const text = sec.textContent.toLowerCase();
+        sec.style.display = text.includes(q) ? 'block' : 'none';
+      });
+    }
+
+    // Scroll Spy for Sidebar Links
+    window.addEventListener('scroll', () => {
+      const sections = document.querySelectorAll('section.doc-section');
+      const navLinks = document.querySelectorAll('.nav-item a');
+      let currentSection = '';
+
+      sections.forEach(section => {
+        const top = section.offsetTop - 120;
+        if (window.pageYOffset >= top) {
+          currentSection = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === `#${currentSection}`) {
+          link.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
